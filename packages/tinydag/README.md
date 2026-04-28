@@ -192,7 +192,25 @@ Two namespaces, both resolved at parse time before validation:
 `vars:` values may reference `${env.X}`. Nested `${vars.X}` references in
 `vars:` are not allowed.
 
-Unresolved references are a parse error (exit code 2).
+Interpolation also runs on `sql_file:` contents — a `.sql` file behaves
+the same as inline `sql:` for substitution. For example, with this DAG:
+
+```yaml
+vars:
+  schema: analytics
+steps:
+  - id: pick
+    type: sql
+    target: warehouse
+    sql_file: ./queries/pick.sql
+```
+
+…and `queries/pick.sql` containing `SELECT * FROM ${vars.schema}.users;`,
+the executor sees `SELECT * FROM analytics.users;`. Useful for keeping
+parameterized queries out of YAML.
+
+Unresolved references are a parse error (exit code 2). The error message
+identifies the file path so you can find the bad ref quickly.
 
 ## Custom TypeScript steps
 

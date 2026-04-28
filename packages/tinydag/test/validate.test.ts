@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { loadDagFile, ParseError } from '../src/core/parse.js';
 import { validateDag } from '../src/core/validate.js';
 
@@ -10,6 +10,12 @@ function tmpDag(content: string): string {
   const path = join(dir, 'dag.yml');
   writeFileSync(path, content);
   return path;
+}
+
+function tmpDagWithSqlFile(dagContent: string, sqlFileName: string, sqlContent: string): string {
+  const dagPath = tmpDag(dagContent);
+  writeFileSync(join(dirname(dagPath), sqlFileName), sqlContent);
+  return dagPath;
 }
 
 const minimalConn = `
@@ -150,5 +156,82 @@ steps:
 `),
     );
     expect(() => validateDag(raw)).toThrow(ParseError);
+  });
+
+  it('interpolates ${vars.X} inside sql_file contents', async () => {
+    const raw = await loadDagFile(
+      tmpDagWithSqlFile(
+        `
+name: ok
+vars:
+  threshold: "42"
+${minimalConn}
+steps:
+  - id: a
+    type: sql
+    target: w
+    sql_file: ./query.sql
+`,
+        'query.sql',
+        'SELECT \${vars.threshold} AS n;',
+      ),
+    );
+    const dag = validateDag(raw);
+    expect(dag.steps[0]).toMatchObject({ type: 'sql', sql: 'SELECT 42 AS n;' });
+  });
+
+  it('interpolates ${env.X} inside sql_file contents', async () => {
+    process.env['TINYDAG_TEST_SCHEMA'] = 'analytics';
+    try {
+      const raw = await loadDagFile(
+        tmpDagWithSqlFile(
+          `
+name: ok
+${minimalConn}
+steps:
+  - id: a
+    type: sql
+    target: w
+    sql_file: ./query.sql
+`,
+          'query.sql',
+          'SELECT * FROM \${env.TINYDAG_TEST_SCHEMA}.users;',
+        ),
+      );
+      const dag = validateDag(raw);
+      expect(dag.steps[0]).toMatchObject({
+        type: 'sql',
+        sql: 'SELECT * FROM analytics.users;',
+      });
+    } finally {
+      delete process.env['TINYDAG_TEST_SCHEMA'];
+    }
+  });
+
+  it('errors with the file path when a sql_file has unresolved ${vars.X}', async () => {
+    const raw = await loadDagFile(
+      tmpDagWithSqlFile(
+        `
+name: bad
+${minimalConn}
+steps:
+  - id: a
+    type: sql
+    target: w
+    sql_file: ./query.sql
+`,
+        'query.sql',
+        'SELECT \${vars.does_not_exist};',
+      ),
+    );
+    let caught: Error | undefined;
+    try {
+      validateDag(raw);
+    } catch (err) {
+      caught = err as Error;
+    }
+    expect(caught).toBeInstanceOf(ParseError);
+    expect(caught?.message).toContain('does_not_exist');
+    expect(caught?.message).toContain('sql_file:./query.sql');
   });
 });

@@ -104,6 +104,10 @@ steps:
 
 Override or supply vars from the CLI: `--var run_date=2026-04-28` (repeatable).
 
+`${vars.X}` and `${env.X}` are also substituted inside `sql_file:`
+contents, so a `.sql` file behaves identically to inline `sql:` for
+parameterization.
+
 ## Custom TypeScript steps
 
 ```ts

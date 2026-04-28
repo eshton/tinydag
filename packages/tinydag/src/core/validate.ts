@@ -4,6 +4,7 @@ import { ParseError } from './parse.js';
 import type { RawDag } from './parse.js';
 import type { ConnectionSpec, DagFile, Step } from './types.js';
 import { interpolate, resolveVars } from './interpolate.js';
+import type { InterpolateContext } from './interpolate.js';
 
 const ID_RE = /^[a-z0-9_]+$/;
 
@@ -27,7 +28,7 @@ export function validateDag(rawDag: RawDag): DagFile {
   const description = optionalString(interpolated, 'description');
 
   const connections = parseConnections(interpolated['connections']);
-  const steps = parseSteps(interpolated['steps'], rawDag.baseDir, connections);
+  const steps = parseSteps(interpolated['steps'], rawDag.baseDir, connections, { env, vars });
 
   return {
     name,
@@ -81,6 +82,7 @@ function parseSteps(
   value: unknown,
   baseDir: string,
   connections: Record<string, ConnectionSpec>,
+  ctx: InterpolateContext,
 ): Step[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new ParseError('`steps` must be a non-empty list');
@@ -111,7 +113,7 @@ function parseSteps(
 
     const type = o['type'];
     if (type === 'sql') {
-      const sql = readSqlBody(o, id, baseDir);
+      const sql = readSqlBody(o, id, baseDir, ctx);
       out.push({ type: 'sql', id, target, depends_on, sql });
     } else if (type === 'custom') {
       const handler = requireString(o, 'handler', `step "${id}"`);
@@ -156,7 +158,12 @@ function parseDeps(value: unknown, stepId: string): string[] {
   return out;
 }
 
-function readSqlBody(o: Record<string, unknown>, id: string, baseDir: string): string {
+function readSqlBody(
+  o: Record<string, unknown>,
+  id: string,
+  baseDir: string,
+  ctx: InterpolateContext,
+): string {
   const sql = o['sql'];
   const sqlFile = o['sql_file'];
   const hasSql = typeof sql === 'string';
@@ -170,7 +177,8 @@ function readSqlBody(o: Record<string, unknown>, id: string, baseDir: string): s
   if (!existsSync(abs)) {
     throw new ParseError(`step "${id}": sql_file not found at ${abs}`);
   }
-  return readFileSync(abs, 'utf8');
+  const contents = readFileSync(abs, 'utf8');
+  return interpolate(contents, ctx, `step "${id}" sql_file:${filePath}`);
 }
 
 function detectCycle(steps: Step[]): void {
