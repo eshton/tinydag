@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# Run JS-based actions (checkout, setup-node, pnpm/action-setup) on Node 24
+# instead of the deprecated Node 20. GitHub will make this the default in
+# June 2026; opt in early to silence the deprecation warning.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
