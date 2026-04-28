@@ -1,8 +1,10 @@
-# AGENTS.md
+# AGENTS.md (package — user-facing)
 
 Context for AI agents working in a project that uses `tinydag`.
 
-If you're working on tinydag *itself*, read the repo's `CLAUDE.md` instead.
+If you're working on tinydag *itself* (i.e. inside the tinydag monorepo),
+the repo root has its own `AGENTS.md` aimed at contributors. This file is
+the one that ships in the published npm tarball.
 
 ## What tinydag is
 

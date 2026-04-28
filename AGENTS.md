@@ -1,8 +1,12 @@
-# CLAUDE.md
+# AGENTS.md (repo root — contributor-facing)
 
-Context for an agent working **on** tinydag itself. For agents working in
-projects that **use** tinydag, see `packages/tinydag/AGENTS.md` (which
-ships with the published npm tarball).
+Context for an agent working **on** tinydag itself.
+
+The repo has a second `AGENTS.md` at `packages/tinydag/AGENTS.md` — that
+one is **user-facing** (ships in the published npm tarball) and explains
+how a project that *consumes* tinydag should look. If your cwd is inside
+`packages/tinydag/`, both files are relevant; this one explains the build
+and the gotchas, the other explains the public contract.
 
 ## What this is
 
