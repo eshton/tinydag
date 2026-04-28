@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=../../packages/tinydag/schemas/dag.schema.json
+name: csv-merge
+description: Read users + addresses from CSV, merge in DuckDB, export to JSON.
+
+connections:
+  warehouse:
+    type: duckdb
+    path: ":memory:"
+
+steps:
+  - id: load_users
+    type: sql
+    target: warehouse
+    sql: |
+      CREATE TABLE users AS
+      SELECT * FROM read_csv_auto('data/users.csv');
+
+  - id: load_addresses
+    type: sql
+    target: warehouse
+    sql: |
+      CREATE TABLE addresses AS
+      SELECT * FROM read_csv_auto('data/addresses.csv');
+
+  - id: merge
+    type: sql
+    target: warehouse
+    depends_on: [load_users, load_addresses]
+    sql: |
+      CREATE TABLE result AS
+      SELECT
+        u.id,
+        u.name,
+        u.email,
+        a.street,
+        a.city,
+        a.country
+      FROM users u
+      LEFT JOIN addresses a ON a.user_id = u.id
+      ORDER BY u.id;
+
+  - id: export
+    type: sql
+    target: warehouse
+    depends_on: [merge]
+    sql: |
+      COPY result TO 'output/result.json' (FORMAT JSON, ARRAY true);

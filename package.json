@@ -1,0 +1,15 @@
+{
+  "name": "tinydag-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/* build",
+    "test": "pnpm -r --filter ./packages/* test",
+    "typecheck": "pnpm -r --filter ./packages/* typecheck",
+    "example:csv-merge": "pnpm --filter csv-merge run"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@10.25.0"
+}

@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -r typecheck
+
+      - run: pnpm -r build
+
+      - run: pnpm -r test
+
+      - name: Workspace example runs green
+        run: pnpm --filter csv-merge run
+
+      - name: Verify result.json
+        run: |
+          test -f examples/csv-merge/output/result.json
+          rows=$(node -e "console.log(JSON.parse(require('fs').readFileSync('examples/csv-merge/output/result.json')).length)")
+          test "$rows" = "8" || (echo "expected 8 rows, got $rows" && exit 1)
+
+      - name: Bundled example runs green from built package
+        run: node packages/tinydag/dist/cli.js example run csv-merge
+
+      - name: Pack and inspect tarball
+        run: |
+          pnpm --filter tinydag pack --pack-destination /tmp
+          tar -tzf /tmp/tinydag-*.tgz | grep -q 'examples/csv-merge/dag.yml' \
+            || (echo "tarball missing bundled example" && exit 1)
+
+  release:
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+
+      - run: pnpm publish --filter tinydag --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

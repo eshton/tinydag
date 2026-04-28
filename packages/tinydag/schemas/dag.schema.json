@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://unpkg.com/tinydag/schemas/dag.schema.json",
+  "title": "tinydag DAG file",
+  "description": "A YAML pipeline definition for tinydag.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "connections", "steps"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Pipeline identifier (used in logs)."
+    },
+    "description": {
+      "type": "string",
+      "description": "Free-form description."
+    },
+    "connections": {
+      "type": "object",
+      "description": "Map of connection name to connection config.",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-z0-9_]+$": {
+          "$ref": "#/$defs/connection"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vars": {
+      "type": "object",
+      "description": "Pipeline variables, referenced as ${vars.X}. Overridable from CLI with --var key=value.",
+      "additionalProperties": { "type": "string" }
+    },
+    "steps": {
+      "type": "array",
+      "description": "Step definitions. Order is for human readability — actual execution order is determined by depends_on.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+
+  "$defs": {
+    "connection": {
+      "oneOf": [
+        { "$ref": "#/$defs/duckdbConnection" },
+        { "$ref": "#/$defs/postgresConnection" }
+      ]
+    },
+
+    "duckdbConnection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "path"],
+      "properties": {
+        "type": { "const": "duckdb" },
+        "path": {
+          "type": "string",
+          "description": "Path to a .duckdb file, or \":memory:\" for an in-memory database."
+        }
+      }
+    },
+
+    "postgresConnection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "anyOf": [
+        { "required": ["url"] },
+        { "required": ["host"] }
+      ],
+      "properties": {
+        "type": { "const": "postgres" },
+        "url": {
+          "type": "string",
+          "description": "Connection URL (postgresql://user:pw@host:5432/db)."
+        },
+        "host": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "database": { "type": "string" },
+        "user": { "type": "string" },
+        "password": { "type": "string" }
+      }
+    },
+
+    "step": {
+      "oneOf": [
+        { "$ref": "#/$defs/sqlStep" },
+        { "$ref": "#/$defs/customStep" }
+      ]
+    },
+
+    "sqlStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "target"],
+      "oneOf": [
+        { "required": ["sql"] },
+        { "required": ["sql_file"] }
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "sql" },
+        "target": {
+          "type": "string",
+          "description": "Name of a declared connection."
+        },
+        "depends_on": { "$ref": "#/$defs/dependsOn" },
+        "sql": {
+          "type": "string",
+          "description": "Inline SQL to execute against `target`."
+        },
+        "sql_file": {
+          "type": "string",
+          "description": "Path to a .sql file (relative to the DAG file)."
+        }
+      }
+    },
+
+    "customStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "target", "handler"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "type": { "const": "custom" },
+        "target": {
+          "type": "string",
+          "description": "Name of a declared connection (informational for custom steps)."
+        },
+        "depends_on": { "$ref": "#/$defs/dependsOn" },
+        "handler": {
+          "type": "string",
+          "description": "Path to a .ts/.js file with a default-exported function (relative to the DAG file)."
+        }
+      }
+    },
+
+    "identifier": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "description": "Lowercase letters, digits, and underscores only."
+    },
+
+    "dependsOn": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "List of step ids that must succeed before this step runs."
+    }
+  }
+}
