@@ -80,4 +80,4 @@ tar -tzf /tmp/tinydag-*.tgz
 
 ## License
 
-Apache-2.0 — see [LICENSE](./LICENSE).
+MIT — see [LICENSE](./LICENSE).

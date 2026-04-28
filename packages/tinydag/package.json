@@ -2,6 +2,8 @@
   "name": "tinydag",
   "version": "0.0.0",
   "description": "A minimal DAG-based ETL framework for TypeScript.",
+  "license": "MIT",
+  "author": "Agoston Fung",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

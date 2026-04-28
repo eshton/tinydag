@@ -411,4 +411,4 @@ Actions — anything that can invoke a CLI on a cadence.
 
 ## License
 
-Apache-2.0.
+MIT.
