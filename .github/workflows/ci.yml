@@ -50,11 +50,23 @@ jobs:
       - name: Bundled example runs green from built package
         run: node packages/tinydag/dist/cli.js example run csv-merge
 
+      - name: Custom-step example runs green (TS handler via tsx)
+        run: pnpm --filter custom-step-example run run
+
+      - name: Verify report.md
+        run: |
+          test -f examples/custom-step/output/report.md
+          grep -q '^# Event Report' examples/custom-step/output/report.md
+          grep -q '^| view | 12 |' examples/custom-step/output/report.md
+          grep -q 'Warnings (count < 5)' examples/custom-step/output/report.md
+
       - name: Pack and inspect tarball
         run: |
           pnpm --filter tinydag pack --pack-destination /tmp
           tar -tzf /tmp/tinydag-*.tgz | grep -q 'examples/csv-merge/dag.yml' \
-            || (echo "tarball missing bundled example" && exit 1)
+            || (echo "tarball missing csv-merge example" && exit 1)
+          tar -tzf /tmp/tinydag-*.tgz | grep -q 'examples/custom-step/dag.yml' \
+            || (echo "tarball missing custom-step example" && exit 1)
 
   release:
     needs: build-and-test

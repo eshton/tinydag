@@ -336,21 +336,29 @@ validation in VS Code (with the YAML extension) and other LSP-aware editors:
 
 ## Bundled examples
 
-| Name        | What it does                                                  |
-|-------------|---------------------------------------------------------------|
-| `csv-merge` | Reads two CSVs into DuckDB, LEFT JOINs them, exports to JSON. |
+| Name          | What it does                                                                      |
+|---------------|-----------------------------------------------------------------------------------|
+| `csv-merge`   | Reads two CSVs into DuckDB, LEFT JOINs them, exports to JSON. SQL-only.           |
+| `custom-step` | Loads events from CSV, aggregates in DuckDB, then a TypeScript handler reads the result and writes a Markdown report. |
 
-Run a bundled example in place (writes inside the install dir, demo only):
+Run the SQL-only example in place (writes inside the install dir, demo only):
 
 ```sh
 npx tinydag example run csv-merge
 ```
 
-Or scaffold one into your own dir:
+Scaffold any example into your own dir:
 
 ```sh
 npx tinydag init my-pipeline --example csv-merge
+npx tinydag init my-ts-pipeline --example custom-step
 ```
+
+> **Note on `custom-step`:** because it uses a `.ts` handler, it does *not*
+> work via `npx tinydag example run custom-step` (Node can't load `.ts`
+> natively). Instead, `tinydag init --example custom-step` it into a target
+> dir, run `npm install` there, and use the included `npm run run` script
+> which invokes the CLI under `tsx`.
 
 ## Recipes
 

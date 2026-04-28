@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=../../packages/tinydag/schemas/dag.schema.json
+name: custom-step
+description: Loads events from CSV, aggregates in DuckDB, then a TS handler writes a Markdown report.
+
+vars:
+  warning_threshold: "5"
+
+connections:
+  warehouse:
+    type: duckdb
+    path: ":memory:"
+
+steps:
+  - id: load_events
+    type: sql
+    target: warehouse
+    sql: |
+      CREATE TABLE events AS
+      SELECT * FROM read_csv_auto('data/events.csv');
+
+  - id: aggregate
+    type: sql
+    target: warehouse
+    depends_on: [load_events]
+    sql: |
+      CREATE TABLE event_counts AS
+      SELECT category, COUNT(*) AS count
+      FROM events
+      GROUP BY category
+      ORDER BY count DESC;
+
+  - id: report
+    type: custom
+    target: warehouse
+    depends_on: [aggregate]
+    handler: ./handlers/make_report.ts
