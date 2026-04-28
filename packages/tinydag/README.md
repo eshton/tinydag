@@ -351,6 +351,18 @@ validation in VS Code (with the YAML extension) and other LSP-aware editors:
 # yaml-language-server: $schema=https://unpkg.com/tinydag/schemas/dag.schema.json
 ```
 
+## AI agent support
+
+The package ships an [`AGENTS.md`](./AGENTS.md) at its root. It's a
+concise context file for AI agents working in projects that use tinydag —
+mental model, DAG file format, the `StepContext` shape, common mistakes
+to avoid, and a CLI cheat sheet.
+
+It lands at `node_modules/tinydag/AGENTS.md` after install. `tinydag init`
+also copies it to your scaffolded project's root, so an agent walking up
+from your `dag.yml` will find it automatically (this is the convention
+Cursor, Windsurf, and Claude Code all read).
+
 ## Bundled examples
 
 | Name          | What it does                                                                      |

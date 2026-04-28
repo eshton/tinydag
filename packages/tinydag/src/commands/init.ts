@@ -10,6 +10,12 @@ function bundledExamplesDir(): string {
   return resolve(here, 'examples');
 }
 
+function packageRoot(): string {
+  // From `<pkg>/dist/cli.js`, go up one level to the package root where
+  // AGENTS.md ships alongside README.md.
+  return dirname(dirname(fileURLToPath(import.meta.url)));
+}
+
 export const initCommand = defineCommand({
   meta: {
     name: 'init',
@@ -50,6 +56,14 @@ export const initCommand = defineCommand({
       force: args.force as boolean,
       filter: (src) => !src.includes('/node_modules'),
     });
+
+    // Drop AGENTS.md into the new project so a user's AI agent has
+    // immediate context for working with tinydag.
+    const agentsSrc = resolve(packageRoot(), 'AGENTS.md');
+    const agentsDest = resolve(targetDir, 'AGENTS.md');
+    if (existsSync(agentsSrc) && (!existsSync(agentsDest) || args.force)) {
+      await cp(agentsSrc, agentsDest, { force: args.force as boolean });
+    }
 
     const rel = targetArg;
     process.stdout.write(`${pc.green('✓')} scaffolded ${pc.bold(exampleName)} into ${pc.cyan(targetDir)}\n\n`);
