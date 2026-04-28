@@ -26,6 +26,33 @@ steps:
 npx tinydag run dag.yml
 ```
 
+## Features
+
+- **YAML-declarative DAGs.** One file per pipeline. Steps, deps, connections,
+  variables — no boilerplate.
+- **DuckDB built in.** Read CSV / JSON / Parquet from local files, HTTP, or
+  S3; transform in SQL; export — no external database to set up.
+- **Parallel by default.** Steps run as soon as their dependencies satisfy.
+  Independent branches keep running when a sibling fails.
+- **TypeScript escape hatch.** When SQL isn't enough, drop in a
+  `type: custom` step backed by a function with a typed `StepContext`.
+- **Optional Postgres.** Peer-dep so users who never touch it don't pay the
+  install cost. Lazy-loaded with an actionable error if `pg` is missing.
+- **Variable interpolation.** `${env.X}` from `process.env` (with `.env`
+  auto-loaded), `${vars.X}` from the DAG file or `--var key=value` on the
+  CLI.
+- **Cancellable.** Ctrl-C propagates via `AbortSignal`; in-flight steps
+  settle, remaining work is marked `skipped`, exit `130`.
+- **Pretty + JSON logging.** Per-step structured records; pipe `--log json`
+  to your shipper of choice.
+- **Editor autocomplete.** Ships a JSON Schema; one pragma in your YAML and
+  VS Code (with the YAML extension) gives you completion + validation.
+- **Tiny.** No scheduler, no web UI, no run-history database. Wrap with
+  cron / systemd / Airflow / GitHub Actions for scheduling.
+- **Zero-clone scaffolding.** `npx tinydag init my-pipeline` copies a
+  bundled example to a target dir; `npx tinydag example run csv-merge`
+  runs one in place.
+
 ## What's where
 
 ```
