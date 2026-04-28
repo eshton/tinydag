@@ -58,18 +58,17 @@ npx tinydag run dag.yml
 ```
 .
 ├── packages/tinydag/          # the published npm package — start here for usage
-│   ├── README.md              # full user docs (CLI, DAG file format, custom steps)
+│   ├── README.md              # full user docs (CLI, DAG file format, custom steps, roadmap)
 │   ├── src/                   # library source
 │   ├── test/                  # vitest unit tests
 │   └── schemas/               # JSON Schema for editor support
-├── examples/csv-merge/        # the reference example, also bundled into the npm tarball
-├── SPEC.md                    # design + v2 roadmap
-└── .github/workflows/ci.yml   # build, test, run example, release on tag
+├── examples/                  # bundled examples (also shipped inside the npm tarball)
+│   ├── csv-merge/             # SQL-only DAG: two CSVs → DuckDB → JSON
+│   └── custom-step/           # SQL pipeline + a TypeScript handler that writes a Markdown report
+└── .github/workflows/ci.yml   # build, test, run examples, release on tag
 ```
 
 For usage, install the package and read [`packages/tinydag/README.md`](./packages/tinydag/README.md).
-
-For design notes and the v2 roadmap, see [`SPEC.md`](./SPEC.md).
 
 ## Develop locally
 

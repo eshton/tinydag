@@ -280,6 +280,23 @@ npx tsx node_modules/tinydag/dist/cli.js run dag.yml
   handler: ./dist/load_users.js
 ```
 
+## Architecture
+
+A few load-bearing decisions worth knowing about:
+
+- **DuckDB is the working store.** Extract and transform steps land their
+  output in DuckDB tables. DuckDB also handles file IO (`read_csv_auto`,
+  `COPY ... TO`), so most pipelines need no separate "files" connector.
+- **Postgres (or another RDBMS) is the result store.** Optional. Use load
+  steps to publish to it when downstream systems need a real database.
+- **Steps don't share in-memory data.** A step communicates with downstream
+  steps only by writing to a connection — not by returning values. This
+  keeps the executor trivial and makes steps independently retryable in v2.
+- **Each step targets exactly one connection** (`target:`). For SQL steps
+  this is enforced (the SQL runs against `target`). For custom steps
+  `target` is informational — the handler receives all connections and may
+  use any of them.
+
 ## Execution model
 
 1. Parse YAML.
@@ -411,11 +428,25 @@ Actions — anything that can invoke a CLI on a cadence.
 
 ## Roadmap
 
-- v1 ships DuckDB + Postgres only. More connectors (S3 client, BigQuery,
-  Snowflake, generic HTTP) are planned as separate optional peer deps.
-- Per-step retries, step timeouts, conditional steps (`when:`),
-  checkpoint-and-resume, and a `tinydag history` command are post-v1.
-- See `SPEC.md` in the repo for the full v2 design.
+v0.x while the YAML schema and `StepContext` shape stabilize; v1.0.0 freezes
+both. Things explicitly deferred past v1:
+
+- **Per-step retries** with backoff (`retries: { attempts, backoff,
+  initial_ms }`).
+- **Step timeouts** (`timeout_ms`) — abort signal fires when exceeded.
+- **Conditional steps** (`when: ${vars.mode} == "backfill"`) — skipped, not
+  failed, when the condition is false.
+- **Checkpoint & resume** — persist run state to a sidecar SQLite/DuckDB
+  file; `tinydag run --resume <run-id>` skips already-succeeded steps.
+- **Pipeline hooks** (`on_failure`, `on_success`) at the pipeline level —
+  notify Slack, page oncall, etc.
+- **Sub-DAGs** — call a DAG from another DAG with a vars override.
+- **Run history** — `tinydag history` backed by the checkpoint store.
+- **Web UI** — out-of-process DAG visualization + live run view.
+- **More connectors** — S3 client, BigQuery, Snowflake, MongoDB, generic
+  HTTP. Each as a separate optional peer dep.
+- **Built-in scheduling** (`tinydag schedule`) — probably unnecessary, but
+  cheap if we want it.
 
 ## License
 

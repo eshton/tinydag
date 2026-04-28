@@ -41,4 +41,4 @@ load_users  ─┐
 load_addresses ─┘
 ```
 
-See `../../SPEC.md` and `../../packages/tinydag/README.md` for deeper docs.
+See `../../packages/tinydag/README.md` for deeper docs.

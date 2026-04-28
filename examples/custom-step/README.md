@@ -48,4 +48,4 @@ tsx node_modules/tinydag/dist/cli.js run dag.yml
 If you'd rather pre-compile your handlers, set `handler:` in the DAG to
 the built `.js` path and run with plain `tinydag run dag.yml`.
 
-See `../../SPEC.md` and `../../packages/tinydag/README.md` for deeper docs.
+See `../../packages/tinydag/README.md` for deeper docs.
