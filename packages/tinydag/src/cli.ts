@@ -9,7 +9,7 @@ import { initCommand } from './commands/init.js';
 const main = defineCommand({
   meta: {
     name: 'tinydag',
-    version: '0.0.0',
+    version: '0.1.0',
     description: 'Tiny YAML-driven ETL framework.',
   },
   subCommands: {

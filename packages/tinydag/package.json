@@ -1,6 +1,6 @@
 {
   "name": "tinydag",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A minimal DAG-based ETL framework for TypeScript.",
   "license": "MIT",
   "author": "Agoston Fung",
