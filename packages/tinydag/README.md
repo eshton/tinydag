@@ -365,10 +365,11 @@ Cursor, Windsurf, and Claude Code all read).
 
 ## Bundled examples
 
-| Name          | What it does                                                                      |
-|---------------|-----------------------------------------------------------------------------------|
-| `csv-merge`   | Reads two CSVs into DuckDB, LEFT JOINs them, exports to JSON. SQL-only.           |
-| `custom-step` | Loads events from CSV, aggregates in DuckDB, then a TypeScript handler reads the result and writes a Markdown report. |
+| Name             | What it does                                                                                                          |
+|------------------|-----------------------------------------------------------------------------------------------------------------------|
+| `csv-merge`      | Reads two CSVs into DuckDB, LEFT JOINs them, exports to JSON. SQL-only.                                               |
+| `custom-step`    | Loads events from CSV, aggregates in DuckDB, then a TypeScript handler reads the result and writes a Markdown report. |
+| `postgres-load`  | Stages messy CSV in DuckDB, cleans it up with SQL, then a TS handler upserts the rows into Postgres in a transaction. |
 
 Run the SQL-only example in place (writes inside the install dir, demo only):
 
@@ -381,13 +382,17 @@ Scaffold any example into your own dir:
 ```sh
 npx tinydag init my-pipeline --example csv-merge
 npx tinydag init my-ts-pipeline --example custom-step
+npx tinydag init my-pg-pipeline --example postgres-load
 ```
 
-> **Note on `custom-step`:** because it uses a `.ts` handler, it does *not*
-> work via `npx tinydag example run custom-step` (Node can't load `.ts`
-> natively). Instead, `tinydag init --example custom-step` it into a target
-> dir, run `npm install` there, and use the included `npm run run` script
-> which invokes the CLI under `tsx`.
+> **Note on `custom-step` and `postgres-load`:** both use `.ts` handlers,
+> which Node can't load natively, so `npx tinydag example run <name>`
+> doesn't work for them. Use `tinydag init --example <name>` to scaffold
+> into a target dir, then `npm install` and `npm run run` (which invokes
+> the CLI under `tsx`).
+>
+> `postgres-load` additionally needs a running Postgres and `PG_URL` set —
+> see its README for a one-line `docker run` to start one locally.
 
 ## Recipes
 

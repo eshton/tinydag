@@ -67,6 +67,61 @@ jobs:
             || (echo "tarball missing csv-merge example" && exit 1)
           tar -tzf /tmp/tinydag-*.tgz | grep -q 'examples/custom-step/dag.yml' \
             || (echo "tarball missing custom-step example" && exit 1)
+          tar -tzf /tmp/tinydag-*.tgz | grep -q 'examples/postgres-load/dag.yml' \
+            || (echo "tarball missing postgres-load example" && exit 1)
+
+  # Postgres integration test. Service containers only work on Linux runners,
+  # so this job is Ubuntu-only and runs in parallel with build-and-test.
+  postgres-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tinydag
+          POSTGRES_PASSWORD: tinydag
+          POSTGRES_DB: tinydag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PG_URL: postgresql://tinydag:tinydag@localhost:5432/tinydag
+      PGPASSWORD: tinydag
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter postgres-load-example run typecheck
+
+      - name: Run postgres-load example
+        run: pnpm --filter postgres-load-example run run
+
+      - name: Verify rows in Postgres
+        run: |
+          rows=$(psql -h localhost -U tinydag -d tinydag -t -A -c "SELECT count(*) FROM users")
+          test "$rows" = "8" || (echo "expected 8 rows, got $rows" && exit 1)
+          # Confirm transform step lowercased the emails before the upsert.
+          psql -h localhost -U tinydag -d tinydag -t -A -c "SELECT email FROM users WHERE id = 1" \
+            | grep -q '^ada@example.com$' \
+            || (echo "expected lowercased email for id=1" && exit 1)
+
+      - name: Re-run to verify ON CONFLICT DO UPDATE path
+        run: |
+          pnpm --filter postgres-load-example run run
+          rows=$(psql -h localhost -U tinydag -d tinydag -t -A -c "SELECT count(*) FROM users")
+          test "$rows" = "8" || (echo "second run produced duplicates: $rows" && exit 1)
 
   release:
     needs: build-and-test

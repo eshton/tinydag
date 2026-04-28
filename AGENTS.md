@@ -43,8 +43,9 @@ packages/tinydag/
 └── README.md                      # full user docs
 
 examples/
-├── csv-merge/      # SQL-only; bundled in tarball; runnable via `tinydag example run`
-└── custom-step/    # TS handler via tsx; bundled but only usable via `tinydag init`
+├── csv-merge/      # SQL-only; bundled; runnable via `tinydag example run`
+├── custom-step/    # TS handler via tsx; bundled but only usable via `tinydag init`
+└── postgres-load/  # DuckDB → Postgres via TS handler; needs PG_URL; CI service container
 
 .github/workflows/ci.yml           # build/test/example matrix; release on tag push
 ```
@@ -62,7 +63,10 @@ node packages/tinydag/dist/cli.js example run csv-merge   # bundled-tarball path
 pnpm --filter tinydag pack --pack-destination /tmp        # inspect publish payload
 ```
 
-CI runs all of the above on Ubuntu + macOS × Node 22 + 24.
+CI runs all of the above on Ubuntu + macOS × Node 22 + 24, plus a
+Linux-only `postgres-integration` job that spins up Postgres 16 in a
+service container and runs the `postgres-load` example end-to-end against
+it (twice, to verify the `ON CONFLICT DO UPDATE` upsert path).
 
 ## Gotchas (things to know before changing code)
 
@@ -98,10 +102,12 @@ These each represent a real bug we hit; please don't undo them.
   documented as use-via-`tinydag init` only — the CLI does not currently
   detect this case and emit a friendlier error.
 
-- **Postgres connector has real implementation but no integration tests
-  in v1.** Spec was explicit about Postgres tests being gated on a
-  `PG_URL` env var "when added." Be aware when changing
-  `connectors/postgres.ts` that the test surface is types-only.
+- **Postgres connector integration test lives in CI, not in `test/`.**
+  The `postgres-load` bundled example runs end-to-end against a Postgres
+  service container in the `postgres-integration` job (Linux-only,
+  service containers don't work on macOS Actions runners). There are no
+  `vitest` tests for the Postgres connector — changes there are best
+  validated by running the example locally with `PG_URL` set.
 
 - **`tsconfig.json` has `noEmit: true` and includes `test/**/*`.** Don't
   set `rootDir: "src"` — it conflicts with the test folder being inside

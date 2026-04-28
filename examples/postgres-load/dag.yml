@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=../../packages/tinydag/schemas/dag.schema.json
+name: postgres-load
+description: Stage messy CSV in DuckDB, clean it up with SQL, then upsert into Postgres via a TS handler.
+
+connections:
+  warehouse:
+    type: duckdb
+    path: ":memory:"
+  results:
+    type: postgres
+    url: ${env.PG_URL}
+
+steps:
+  - id: extract
+    type: sql
+    target: warehouse
+    sql: |
+      CREATE TABLE staging AS
+      SELECT * FROM read_csv_auto('data/users.csv');
+
+  - id: transform
+    type: sql
+    target: warehouse
+    depends_on: [extract]
+    sql: |
+      CREATE TABLE clean_users AS
+      SELECT
+        id,
+        lower(trim(email)) AS email
+      FROM staging;
+
+  - id: prepare_target
+    type: sql
+    target: results
+    sql: |
+      CREATE TABLE IF NOT EXISTS users (
+        id INT PRIMARY KEY,
+        email TEXT NOT NULL
+      );
+
+  - id: load
+    type: custom
+    target: results
+    depends_on: [transform, prepare_target]
+    handler: ./handlers/load_users.ts

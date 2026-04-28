@@ -1,0 +1,22 @@
+{
+  "name": "postgres-load-example",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "run": "tsx node_modules/tinydag/dist/cli.js run dag.yml",
+    "validate": "tinydag validate dag.yml",
+    "list": "tinydag list dag.yml",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tinydag": "workspace:*",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
